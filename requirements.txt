@@ -1,0 +1,4 @@
+requests
+stem
+beautifulsoup4
+lxml
