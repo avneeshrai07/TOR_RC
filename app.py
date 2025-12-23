@@ -1,9 +1,11 @@
+import asyncio
 import logging
 from typing import List, Dict
 
-from config import NEWS_SITES
 from tor.session_manager import tor_session_manager
-from news_scrapers.pr_news_wire import scrape_pr_newswire
+from news_scrapers.pr_news_wire import PRNewswireScraper
+
+TEST_URL = "https://www.prnewswire.com/news-releases/toyota-indiana-completes-1-3-billion-modernization-project-includes-550-new-jobs-300988459.html"
 
 
 def setup_logging():
@@ -13,28 +15,24 @@ def setup_logging():
     )
 
 
-def main():
+async def main():
     setup_logging()
     logger = logging.getLogger("main")
-
     logger.info("Starting Tor-based news scraper")
 
-    scraper = scrape_pr_newswire(
-        base_urls=NEWS_SITES,
-        request_func=tor_session_manager.request,
-    )
+    scraper = PRNewswireScraper(request_func=tor_session_manager.request)
 
+    # ✅ Single-article test (async)
+    text = await scraper.scrape_article(TEST_URL)
+    print("\n--- ARTICLE TEXT  ---\n")
+    print(text)
+
+    # ✅ If run() is sync, call it normally
     results: List[Dict] = scraper.run()
 
     logger.info("Scraped %d items total", len(results))
 
-    # For demo, just print a few
     for item in results[:20]:
-        print(f"[{item['source']}] {item['title']}")
+        print(f"[{item.get('source')}] {item.get('title')}")
 
-    tor_session_manager.close()
-    logger.info("Done.")
-
-
-if __name__ == "__main__":
-    main()
+    # ✅ close tor session manager
