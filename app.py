@@ -36,3 +36,9 @@ async def main():
         print(f"[{item.get('source')}] {item.get('title')}")
 
     # ✅ close tor session manager
+    tor_session_manager.close()
+    logger.info("Done.")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
