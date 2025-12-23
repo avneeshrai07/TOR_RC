@@ -1,4 +1,6 @@
 requests
+requests[socks]
+httpx[socks]
 stem
 beautifulsoup4
 lxml
