@@ -27,14 +27,6 @@ async def main():
     print("\n--- ARTICLE TEXT  ---\n")
     print(text)
 
-    # ✅ If run() is sync, call it normally
-    results: List[Dict] = scraper.run()
-
-    logger.info("Scraped %d items total", len(results))
-
-    for item in results[:20]:
-        print(f"[{item.get('source')}] {item.get('title')}")
-
     # ✅ close tor session manager
     tor_session_manager.close()
     logger.info("Done.")
