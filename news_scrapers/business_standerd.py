@@ -5,7 +5,7 @@ import httpx
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 from configurations.basic_configurations import USER_AGENT
-
+from pyvirtualdisplay import Display
 
 HEADERS = {
     "User-Agent": USER_AGENT,
@@ -105,66 +105,48 @@ async def scrape_with_requests_async(url: str, timeout: int = 15) -> Optional[Di
 
 async def scrape_with_playwright_async(url: str) -> Optional[Dict[str, Any]]:
     """Fallback to Playwright async for dynamic content."""
+    display = None
     try:
         print("Falling back to Playwright (async)...")
+        
+        # Start virtual display if on headless server
+        import os
+        if os.getenv('DISPLAY') is None:
+            display = Display(visible=0, size=(1920, 1080))
+            display.start()
+            print("Started virtual display")
+        
         async with async_playwright() as p:
-            # Launch with additional args to avoid detection
             browser = await p.chromium.launch(
-                headless=True,  # Try with visible browser first
+                headless=False,  # Now this works!
                 args=[
                     '--disable-blink-features=AutomationControlled',
                     '--disable-dev-shm-usage',
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
-                    '--disable-web-security',
                 ]
             )
             
-            # Create context with realistic settings
             context = await browser.new_context(
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
                 viewport={"width": 1920, "height": 1080},
-                locale="en-US",
-                timezone_id="America/New_York",
-                permissions=["geolocation"],
-                extra_http_headers={
-                    "Accept-Language": "en-US,en;q=0.9",
-                }
             )
             
-            # Remove automation indicators
             await context.add_init_script("""
                 Object.defineProperty(navigator, 'webdriver', {
                     get: () => undefined
                 });
-                
-                window.navigator.chrome = {
-                    runtime: {}
-                };
-                
-                Object.defineProperty(navigator, 'plugins', {
-                    get: () => [1, 2, 3, 4, 5]
-                });
-                
-                Object.defineProperty(navigator, 'languages', {
-                    get: () => ['en-US', 'en']
-                });
             """)
             
             page = await context.new_page()
-            
-            # Navigate and wait
             await page.goto(url, wait_until="networkidle", timeout=30000)
-            await page.wait_for_timeout(5000)  # Wait 5 seconds for any dynamic content
-            
-            # Check if we got blocked
-            page_title = await page.title()
-            if "Access Denied" in page_title or "403" in page_title:
-                print("DEBUG: Still getting blocked, trying to wait longer...")
-                await page.wait_for_timeout(5000)
+            await page.wait_for_timeout(3000)
 
             html = await page.content()
             await browser.close()
+            
+        if display:
+            display.stop()
 
         parsed = _extract_from_html(html)
         if parsed:
@@ -175,6 +157,8 @@ async def scrape_with_playwright_async(url: str) -> Optional[Dict[str, Any]]:
             return None
 
     except Exception as e:
+        if display:
+            display.stop()
         print(f"✗ Playwright method failed: {e}")
         return None
 
