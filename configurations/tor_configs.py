@@ -17,8 +17,4 @@ TOR_IP_RENEW_INTERVAL = int(os.getenv("TOR_IP_RENEW_INTERVAL", "1800")) # 30 min
 DEFAULT_MAX_RETRIES = int(os.getenv("DEFAULT_MAX_RETRIES", "3"))
 DEFAULT_BACKOFF_FACTOR = float(os.getenv("DEFAULT_BACKOFF_FACTOR", "1.5"))
 
-# News targets (can also load from DB / file later)
-NEWS_SITES = [
-    "https://www.bbc.com/news",
-    "https://www.reuters.com/",
-]
+

@@ -7,7 +7,7 @@ from stem import Signal
 from stem.control import Controller
 from stem import SocketError
 
-from config import (
+from configurations.tor_configs import (
     TOR_CONTROL_HOST,
     TOR_CONTROL_PORT,
     TOR_CONTROL_PASSWORD,

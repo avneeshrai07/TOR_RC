@@ -4,7 +4,7 @@ from typing import Optional
 
 import requests
 
-from config import (
+from configurations.tor_configs import (
     TOR_IP_RENEW_INTERVAL,
     DEFAULT_MAX_RETRIES,
     DEFAULT_BACKOFF_FACTOR,
