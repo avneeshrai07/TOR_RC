@@ -60,6 +60,7 @@ async def news_scraper(all_news_results):
     # all_news_results: List[dict] = request_body.all_news_results or []
     for single_news in all_news_results:
         # search_type = single_news.get("search_type")
+        # add logic to ignore pdf links
         engine_name = single_news.get("engine_name")
         link = single_news.get("link")
         scraper_function = scrapers[engine_name]
@@ -86,9 +87,9 @@ async def main():
         {
             "search_type": "GOOGLE",
             "search_term": "factory modernization project",
-            "engine_name": "FREE_PRESS_JOURNAL",
+            "engine_name": "BUSINESS_STANDARD",
             "title": "Emerson's New Engineering Software Accelerates Plant ...",
-            "link": "https://www.freepressjournal.in/business/infosys-forges-long-term-collaboration-with-tk-elevator-for-digital-transformation",
+            "link": "https://www.business-standard.com/world-news/pennsylvania-ammo-plant-boosts-artillery-production-in-russia-ukraine-fight-124082800188_1.html",
             "description": "/PRNewswire/ -- Global technology and software leader Emerson (NYSE: EMR) is helping customers more quickly and efficiently transition legacy technology to...",
             "publish_date": "2023-08-29",
             "full_title": "",
