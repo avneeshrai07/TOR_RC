@@ -110,7 +110,7 @@ async def scrape_with_playwright_async(url: str) -> Optional[Dict[str, Any]]:
         async with async_playwright() as p:
             # Launch with additional args to avoid detection
             browser = await p.chromium.launch(
-                headless=False,  # Try with visible browser first
+                headless=True,  # Try with visible browser first
                 args=[
                     '--disable-blink-features=AutomationControlled',
                     '--disable-dev-shm-usage',

@@ -4,4 +4,7 @@ beautifulsoup4
 lxml
 requests
 aiohttp
-playwright install
+# playwright install
+# sudo apt-get install -y $(cat system-dependencies.txt | grep -v '^#' | tr '\n' ' ')
+
+
