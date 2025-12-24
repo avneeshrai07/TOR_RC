@@ -86,9 +86,9 @@ async def main():
         {
             "search_type": "GOOGLE",
             "search_term": "factory modernization project",
-            "engine_name": "PR_NEWSWIRE",
+            "engine_name": "FREE_PRESS_JOURNAL",
             "title": "Emerson's New Engineering Software Accelerates Plant ...",
-            "link": "https://www.prnewswire.com/news-releases/emersons-new-engineering-software-accelerates-plant-modernization-using-artificial-intelligence-301910424.html",
+            "link": "https://www.freepressjournal.in/business/infosys-forges-long-term-collaboration-with-tk-elevator-for-digital-transformation",
             "description": "/PRNewswire/ -- Global technology and software leader Emerson (NYSE: EMR) is helping customers more quickly and efficiently transition legacy technology to...",
             "publish_date": "2023-08-29",
             "full_title": "",

@@ -1,6 +1,7 @@
 fastapi
-playwright==1.44.0
-beautifulsoup4==4.12.3
-lxml==5.2.1
-requests==2.32.3
-aiohttp==3.10.1
+playwright
+beautifulsoup4
+lxml
+requests
+aiohttp
+playwright install
