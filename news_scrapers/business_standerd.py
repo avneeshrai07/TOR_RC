@@ -1,11 +1,15 @@
 import asyncio
+import platform
 from typing import Optional, Dict, Any, List
 
 import httpx
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 from configurations.basic_configurations import USER_AGENT
-from pyvirtualdisplay import Display
+
+# Only import Display on Linux
+if platform.system() == "Linux":
+    from pyvirtualdisplay import Display
 
 HEADERS = {
     "User-Agent": USER_AGENT,
@@ -15,6 +19,10 @@ HEADERS = {
     "DNT": "1",
     "Connection": "keep-alive",
     "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
 }
 
 
@@ -30,13 +38,11 @@ def _extract_from_html(html: str) -> Optional[Dict[str, Any]]:
         title_tag = soup.find("h1")
     
     title = title_tag.get_text(strip=True) if title_tag else None
-    
     print(f"DEBUG: Title found: {title}")
 
     # Extract content from <p> tags
     content_parts: List[str] = []
     
-    # Try multiple selectors for the content container
     story_div = soup.find("div", class_=lambda x: x and "MainStory_storycontent" in str(x) if x else False)
     if not story_div:
         story_div = soup.find("div", class_=lambda x: x and "storycontent" in str(x) if x else False)
@@ -44,9 +50,7 @@ def _extract_from_html(html: str) -> Optional[Dict[str, Any]]:
     print(f"DEBUG: Story div found: {story_div is not None}")
     
     if story_div:
-        # Find the parent_top_div
         parent_div = story_div.find("div", id="parent_top_div")
-        
         if not parent_div:
             parent_div = story_div
         
@@ -74,7 +78,6 @@ def _extract_from_html(html: str) -> Optional[Dict[str, Any]]:
                     content_parts.append(text)
 
     content = "\n\n".join(content_parts) if content_parts else None
-    
     print(f"DEBUG: Content paragraphs found: {len(content_parts)}")
 
     if title and content:
@@ -109,37 +112,91 @@ async def scrape_with_playwright_async(url: str) -> Optional[Dict[str, Any]]:
     try:
         print("Falling back to Playwright (async)...")
         
-        # Start virtual display if on headless server
+        # Start virtual display ONLY on Linux headless servers
+        is_linux = platform.system() == "Linux"
         import os
-        if os.getenv('DISPLAY') is None:
+        
+        if is_linux and os.getenv('DISPLAY') is None:
             display = Display(visible=0, size=(1920, 1080))
             display.start()
-            print("Started virtual display")
+            print("Started virtual display (Linux)")
         
         async with async_playwright() as p:
+            # Use headless mode on Linux, headed on Windows
+            is_headless = is_linux and os.getenv('DISPLAY') is None
+            
             browser = await p.chromium.launch(
-                headless=False,  # Now this works!
+                headless=is_headless,
                 args=[
                     '--disable-blink-features=AutomationControlled',
                     '--disable-dev-shm-usage',
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
+                    '--disable-web-security',
+                    '--disable-features=IsolateOrigins,site-per-process',
                 ]
             )
             
             context = await browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
                 viewport={"width": 1920, "height": 1080},
+                extra_http_headers={
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                    "Accept-Language": "en-US,en;q=0.9",
+                    "Accept-Encoding": "gzip, deflate, br",
+                    "DNT": "1",
+                    "Connection": "keep-alive",
+                    "Upgrade-Insecure-Requests": "1",
+                    "Sec-Fetch-Dest": "document",
+                    "Sec-Fetch-Mode": "navigate",
+                    "Sec-Fetch-Site": "none",
+                    "Sec-Fetch-User": "?1",
+                },
             )
             
+            # Stealth scripts to avoid detection
             await context.add_init_script("""
                 Object.defineProperty(navigator, 'webdriver', {
                     get: () => undefined
                 });
+                
+                // Override the navigator.plugins
+                Object.defineProperty(navigator, 'plugins', {
+                    get: () => [1, 2, 3, 4, 5]
+                });
+                
+                // Override the navigator.languages
+                Object.defineProperty(navigator, 'languages', {
+                    get: () => ['en-US', 'en']
+                });
+                
+                // Chrome runtime
+                window.chrome = {
+                    runtime: {}
+                };
+                
+                // Permissions
+                const originalQuery = window.navigator.permissions.query;
+                window.navigator.permissions.query = (parameters) => (
+                    parameters.name === 'notifications' ?
+                        Promise.resolve({ state: Notification.permission }) :
+                        originalQuery(parameters)
+                );
             """)
             
             page = await context.new_page()
-            await page.goto(url, wait_until="networkidle", timeout=30000)
+            
+            # Random delay before navigation
+            await asyncio.sleep(2)
+            
+            await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+            
+            # Scroll to simulate human behavior
+            await page.evaluate("window.scrollTo(0, document.body.scrollHeight / 2)")
+            await asyncio.sleep(1)
+            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            
+            # Wait for content to load
             await page.wait_for_timeout(3000)
 
             html = await page.content()
